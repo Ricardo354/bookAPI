@@ -11,42 +11,60 @@ import (
 )
 
 func HashPassword(password string) (string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-    return string(bytes), err
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
 }
 
-func Register(c *fiber.Ctx) error{
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func CheckUsernameExists(u string) (bool, error) {
+    db := database.DBConn
+    usuario := new(models.Usuario)
+
+    if err := db.Where("usuario = ?", u).First(usuario).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return false, nil
+        }
+        return false, err
+    }
+    return true, nil 
+}
+
+func Register(c *fiber.Ctx) error {
 
 	db := database.DBConn
-	
+
 	usuario := new(models.Usuario)
 
-	if err := c.BodyParser(usuario); err != nil{
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message":"Dados mal formados"})
+	if err := c.BodyParser(usuario); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Dados mal formados"})
 	}
 
-	result := db.Where("usuario = ?", usuario.Usuario).First(&usuario)
+	exists, err := CheckUsernameExists(usuario.Username)
 
-	if result.Error == nil{
-		return c.Status(500).JSON(fiber.Map{"message" : "User already exists"})
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Erro ao verificar usuário"})
 	}
 
-	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound){
-		return c.Status(500).JSON(fiber.Map{"message":"Internal server error ocurred"})
+	if exists {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Usuário já existe"})
 	}
-	
+
 	hashed_password, err := HashPassword(usuario.Senha)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"message":"Internal server error ocurred"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error ocurred"})
 	}
-	usuario.Senha = hashed_password	
+	usuario.Senha = hashed_password
 
-	if err := db.Create(usuario); err != nil{
-		return c.Status(500).JSON(fiber.Map{"message":"Internal server error ocurred"})
+	if err := db.Create(usuario).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error ocurred"})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message":"Usuario criado com sucesso!"})
+	return c.Status(fiber.StatusCreated).JSON(usuario)
 
-	// else, hash password and add to db
 
 }
+

@@ -14,12 +14,12 @@ func GetAllLivros(c *fiber.Ctx) error {
 	var Livros []models.Livro
 
 	if err := db.Find(&Livros).Error; err != nil {
-		c.Status(500).JSON(fiber.Map{
+		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Erro ao buscar Livros",
 		})
 	}
 
-	return c.Status(200).JSON(Livros)
+	return c.Status(fiber.StatusOK).JSON(Livros)
 }
 
 func GetLivroByID(c *fiber.Ctx) error {
@@ -30,13 +30,13 @@ func GetLivroByID(c *fiber.Ctx) error {
 
 	result := db.Find(Livro, c.Params("id"))
 	if result.Error != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Erro ao buscar Livro",
 		})
 	} else if result.RowsAffected > 0 {
-		return c.Status(200).JSON(Livro)
+		return c.Status(fiber.StatusOK).JSON(Livro)
 	} else {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Livro não encontrado!",
 		})
 	}
@@ -50,7 +50,7 @@ func CreateLivro(c *fiber.Ctx) error {
 	Livro := new(models.Livro)
 
 	if err := c.BodyParser(Livro); err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Erro ao interpretar dados",
 		})
 	}
@@ -58,12 +58,12 @@ func CreateLivro(c *fiber.Ctx) error {
 	// validator
 
 	if err := db.Create(Livro).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Erro ao criar Livro",
 		})
 	}
 
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"Livro criado": Livro,
 	})
 
@@ -76,23 +76,23 @@ func UpdateLivroByID(c *fiber.Ctx) error {
 	Livro := new(models.Livro)
 
 	if err := db.First(Livro, c.Params("id")).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Livro não encontrado",
 		})
 	}
 
 	if err := c.BodyParser(Livro); err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Erro ao interpretar dados",
 		})
 	}
 
 	if err := db.Save(Livro).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Erro ao atualizar livro",
 		})
 	} else {
-		return c.Status(200).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Livro atualizado com sucesso",
 			"Livro":   Livro})
 	}
@@ -105,12 +105,12 @@ func DeleteLivroByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	if err := db.Delete(&models.Livro{}, id).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"Erro": "Erro ao deletar livro",
 		})
 	}
 
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ID Deletado": id,
 	})
 

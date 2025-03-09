@@ -2,11 +2,11 @@ package routes
 
 import (
 	"livroAPI/src/handler"
-	"github.com/gofiber/fiber/v2"
 
+	"github.com/gofiber/fiber/v2"
 )
 
-//JWT auth	
+//JWT auth
 //Rate limiting
 //godotenv
 //docker
@@ -23,8 +23,9 @@ func LivroRoutes(app *fiber.App) {
 	book_endpoints.Put("/:id", handler.UpdateLivroByID)
 	book_endpoints.Delete("/:id", handler.DeleteLivroByID)
 
-	// auth_endpoints := app.Group("/auth")
+	auth_endpoints := app.Group("/auth")
 
-	
+	auth_endpoints.Post("/signup", handler.Register)
+	auth_endpoints.Post("/login", handler.Login)
 
 }
